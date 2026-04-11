@@ -1,0 +1,206 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f7f5;
+  color: #1f2937;
+}
+
+a {
+  text-decoration: none;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.page-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 28px;
+  color: #1f2937;
+}
+
+.form-card,
+.logs-card,
+.edit-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.edit-card {
+  margin-bottom: 24px;
+}
+
+.log-form {
+  width: 100%;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1f2937;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+  color: #1f2937;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.button-row,
+.filter-row,
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-row {
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-row label {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.primary-button {
+  background-color: #2563eb;
+  color: white;
+}
+
+.secondary-button {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.danger-button {
+  background-color: #dc2626;
+  color: white;
+}
+
+.small-button {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.logs-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background: white;
+}
+
+.logs-table thead tr {
+  background-color: #1e293b;
+  color: white;
+}
+
+.logs-table th,
+.logs-table td {
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.logs-table th {
+  color: white;
+}
+
+.notes-cell {
+  min-width: 180px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .page-container {
+    padding: 12px;
+  }
+
+  .form-card,
+  .logs-card,
+  .edit-card {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-row,
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    width: 100%;
+  }
+}
