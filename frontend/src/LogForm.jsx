@@ -106,9 +106,9 @@ function LogForm({ auth }) {
             <div className="form-group">
               <label>Date</label>
               <input
+                type="date"
                 name="logDate"
                 required
-                placeholder="MM/DD/YYYY or MM/DD/YY"
                 value={form.logDate}
                 onChange={handleChange}
               />
