@@ -158,7 +158,7 @@ function LogsPage({ auth }) {
       turnStatus: log.turnStatus ?? "",
       rainInches: log.rainInches ?? "",
       notes: log.notes ?? "",
-      windrowId: log.windrow?.id ?? ""
+      windrowId: log.windrow?.rowNumber ?? ""
     });
 
     setEditingId(log.id);
@@ -188,7 +188,7 @@ function LogsPage({ auth }) {
         form.rainInches === "" ? null : Number(form.rainInches),
       notes: form.notes,
       windrow: {
-        id: Number(form.windrowId)
+        rowNumber: form.windrowId
       }
     };
 
@@ -223,7 +223,7 @@ function LogsPage({ auth }) {
         return true;
       }
 
-      return String(log.windrow?.id ?? "") === windrowFilter;
+      return String(log.windrow?.rowNumber ?? "") === windrowFilter;
     })
     .sort((a, b) => new Date(b.logDate) - new Date(a.logDate));
 
@@ -446,7 +446,7 @@ function LogsPage({ auth }) {
                     <td>{formatDateForDisplay(log.logDate)}</td>
                     <td>{formatTime(log.logTime)}</td>
                     <td>{log.operatorName}</td>
-                    <td>{log.windrow?.id}</td>
+                    <td>{log.windrow?.rowNumber}</td>
                     <td>{log.probe1TempBefore}</td>
                     <td>{log.probe2TempBefore}</td>
                     <td>{log.probe3TempBefore}</td>

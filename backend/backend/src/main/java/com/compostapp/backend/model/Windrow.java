@@ -15,7 +15,7 @@ public class Windrow {
     private String status;
 
     @ManyToOne
-    @JoinColumn(name = "site_id", nullable = false)
+    @JoinColumn(name = "site_id", nullable = true)
     private Site site;
 
     public Windrow() {

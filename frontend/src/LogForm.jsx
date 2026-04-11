@@ -69,7 +69,7 @@ function LogForm({ auth }) {
         form.rainInches === "" ? null : Number(form.rainInches),
       notes: form.notes,
       windrow: {
-        id: Number(form.windrowId)
+        rowNumber: form.windrowId
       }
     };
 
