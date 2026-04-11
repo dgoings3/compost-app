@@ -39,7 +39,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("https://compost-app-1.onrender.com"));
+        configuration.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "https://compost-app-1.onrender.com",
+            "https://windrowpro.com",
+            "https://www.windrowpro.com"
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
