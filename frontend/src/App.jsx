@@ -3,6 +3,8 @@ import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
 import { useState } from "react";
 
+const API_BASE = "https://compost-app.onrender.com";
+
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +16,7 @@ function LoginPage({ onLogin }) {
     const auth = btoa(`${username}:${password}`);
 
     try {
-      const res = await fetch("http://localhost:8080/api/logs", {
+      const res = await fetch(`${API_BASE}/api/logs`, {
         headers: {
           Authorization: `Basic ${auth}`
         }

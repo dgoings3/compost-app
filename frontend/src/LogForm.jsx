@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./App.css";
 
+const API_BASE = "https://compost-app.onrender.com";
+
 function LogForm({ auth }) {
   const emptyForm = {
     logDate: "",
@@ -60,9 +62,11 @@ function LogForm({ auth }) {
       probe3TempBefore: Number(form.probe3TempBefore),
       tempAfter: Number(form.tempAfter),
       moisturePercent: Number(form.moisturePercent),
-      waterAppliedGallons: form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
+      waterAppliedGallons:
+        form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
       turnStatus: form.turnStatus,
-      rainInches: form.rainInches === "" ? null : Number(form.rainInches),
+      rainInches:
+        form.rainInches === "" ? null : Number(form.rainInches),
       notes: form.notes,
       windrow: {
         id: Number(form.windrowId)
@@ -70,7 +74,7 @@ function LogForm({ auth }) {
     };
 
     try {
-      const res = await fetch("http://localhost:8080/api/logs", {
+      const res = await fetch(`${API_BASE}/api/logs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

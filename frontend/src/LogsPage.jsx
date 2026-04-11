@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import "./App.css";
 
+const API_BASE = "https://compost-app.onrender.com";
+
 function LogsPage({ auth }) {
   const emptyForm = {
     logDate: "",
@@ -18,19 +20,19 @@ function LogsPage({ auth }) {
     windrowId: ""
   };
 
-function formatTime(timeString) {
-  if (!timeString) return "";
+  function formatTime(timeString) {
+    if (!timeString) return "";
 
-  const [hourStr, minute] = timeString.split(":");
-  let hour = parseInt(hourStr);
+    const [hourStr, minute] = timeString.split(":");
+    let hour = parseInt(hourStr);
 
-  const ampm = hour >= 12 ? "PM" : "AM";
+    const ampm = hour >= 12 ? "PM" : "AM";
 
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
 
-  return `${hour}:${minute} ${ampm}`;
-}
+    return `${hour}:${minute} ${ampm}`;
+  }
 
   const [logs, setLogs] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -43,7 +45,7 @@ function formatTime(timeString) {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/logs", {
+      const res = await fetch(`${API_BASE}/api/logs`, {
         headers: {
           Authorization: `Basic ${auth}`
         }
@@ -122,7 +124,7 @@ function formatTime(timeString) {
   }
 
   const handleDelete = async (id) => {
-    const res = await fetch(`http://localhost:8080/api/logs/${id}`, {
+    const res = await fetch(`${API_BASE}/api/logs/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Basic ${auth}`
@@ -179,9 +181,11 @@ function formatTime(timeString) {
       probe3TempBefore: Number(form.probe3TempBefore),
       tempAfter: Number(form.tempAfter),
       moisturePercent: Number(form.moisturePercent),
-      waterAppliedGallons: form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
+      waterAppliedGallons:
+        form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
       turnStatus: form.turnStatus,
-      rainInches: form.rainInches === "" ? null : Number(form.rainInches),
+      rainInches:
+        form.rainInches === "" ? null : Number(form.rainInches),
       notes: form.notes,
       windrow: {
         id: Number(form.windrowId)
@@ -189,7 +193,7 @@ function formatTime(timeString) {
     };
 
     try {
-      const res = await fetch(`http://localhost:8080/api/logs/${editingId}`, {
+      const res = await fetch(`${API_BASE}/api/logs/${editingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
