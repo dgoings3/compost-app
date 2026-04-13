@@ -17,45 +17,46 @@ function LogForm({ auth, apiBase }) {
     co2Level: "",
     turnStatus: "",
     rainInches: "",
-    notes: "",
+    notes: ""
   };
 
   const [form, setForm] = useState(emptyForm);
+  const [message, setMessage] = useState("");
 
-  function handleChange(e) {
-    const { name, value } = e.target;
+  function toNumberOrNull(value) {
+    return value === "" ? null : Number(value);
+  }
+
+  function handleChange(event) {
+    const { name, value } = event.target;
     setForm((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setMessage("");
 
     const payload = {
       jobName: form.jobName,
       logDate: form.logDate,
       logTime: form.logTime,
       operatorName: form.operatorName,
-      probe1TempBefore:
-        form.probe1TempBefore === "" ? null : Number(form.probe1TempBefore),
-      probe2TempBefore:
-        form.probe2TempBefore === "" ? null : Number(form.probe2TempBefore),
-      probe3TempBefore:
-        form.probe3TempBefore === "" ? null : Number(form.probe3TempBefore),
-      tempAfter: form.tempAfter === "" ? null : Number(form.tempAfter),
-      moisturePercent:
-        form.moisturePercent === "" ? null : Number(form.moisturePercent),
-      waterAppliedGallons:
-        form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
-      co2Level: form.co2Level === "" ? null : Number(form.co2Level),
-      turnStatus: form.turnStatus,
-      rainInches: form.rainInches === "" ? null : Number(form.rainInches),
-      notes: form.notes,
       windrow: {
-        rowNumber: form.windrowRowNumber,
+        rowNumber: form.windrowRowNumber
       },
+      probe1TempBefore: toNumberOrNull(form.probe1TempBefore),
+      probe2TempBefore: toNumberOrNull(form.probe2TempBefore),
+      probe3TempBefore: toNumberOrNull(form.probe3TempBefore),
+      tempAfter: toNumberOrNull(form.tempAfter),
+      moisturePercent: toNumberOrNull(form.moisturePercent),
+      waterAppliedGallons: toNumberOrNull(form.waterAppliedGallons),
+      co2Level: toNumberOrNull(form.co2Level),
+      turnStatus: form.turnStatus,
+      rainInches: toNumberOrNull(form.rainInches),
+      notes: form.notes
     };
 
     try {
@@ -63,20 +64,19 @@ function LogForm({ auth, apiBase }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Basic ${auth}`,
+          Authorization: auth
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
         throw new Error("Failed to save log");
       }
 
-      alert("Log saved successfully");
       setForm(emptyForm);
+      setMessage("Log saved successfully.");
     } catch (error) {
-      console.error(error);
-      alert("Failed to save log");
+      setMessage("Failed to save log.");
     }
   }
 
@@ -85,7 +85,7 @@ function LogForm({ auth, apiBase }) {
       <div className="form-card">
         <h1 className="page-title">Compost Log Entry</h1>
 
-        <form onSubmit={handleSubmit} className="form-grid">
+        <form onSubmit={handleSubmit} className="log-form">
           <div className="form-grid">
             <div className="form-group">
               <label>Job</label>
@@ -137,7 +137,6 @@ function LogForm({ auth, apiBase }) {
                 placeholder="Windrow ID"
                 value={form.windrowRowNumber}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -214,12 +213,12 @@ function LogForm({ auth, apiBase }) {
             </div>
 
             <div className="form-group">
-              <label>CO2 Level</label>
+              <label>CO2</label>
               <input
                 type="number"
                 step="any"
                 name="co2Level"
-                placeholder="CO2 Level"
+                placeholder="CO2"
                 value={form.co2Level}
                 onChange={handleChange}
               />
@@ -228,7 +227,7 @@ function LogForm({ auth, apiBase }) {
             <div className="form-group">
               <label>Turn Status</label>
               <select name="turnStatus" value={form.turnStatus} onChange={handleChange}>
-                <option value="">Select Turn Status</option>
+                <option value="">Select Status</option>
                 <option value="TURNED">Turned</option>
                 <option value="NOT TURNED">Not Turned</option>
               </select>
@@ -246,7 +245,7 @@ function LogForm({ auth, apiBase }) {
               />
             </div>
 
-            <div className="form-group form-group-full">
+            <div className="form-group full-width">
               <label>Additional Notes</label>
               <textarea
                 name="notes"
@@ -258,9 +257,11 @@ function LogForm({ auth, apiBase }) {
             </div>
           </div>
 
-          <button type="submit" className="save-btn">
+          <button type="submit" className="primary-button">
             Save Log
           </button>
+
+          {message && <p className="status-message">{message}</p>}
         </form>
       </div>
     </div>

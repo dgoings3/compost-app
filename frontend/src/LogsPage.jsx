@@ -1,129 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 import "./App.css";
 
-function SimpleLineChart({ title, data, dataKey }) {
-  const chartData = data
-    .filter((item) => item[dataKey] !== null && item[dataKey] !== undefined && item[dataKey] !== "")
-    .map((item) => ({
-      label: `${formatDateForDisplay(item.logDate)} ${formatTime(item.logTime)}`,
-      value: Number(item[dataKey])
-    }));
-
-  if (chartData.length < 2) {
-    return (
-      <div className="edit-card" style={{ marginBottom: "20px" }}>
-        <h3>{title}</h3>
-        <p>Need at least 2 logs to draw this graph.</p>
-      </div>
-    );
-  }
-
-  const width = 700;
-  const height = 220;
-  const padding = 30;
-
-  const values = chartData.map((d) => d.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-
-  const points = chartData.map((item, index) => {
-    const x = padding + (index * (width - padding * 2)) / (chartData.length - 1);
-    const y = height - padding - ((item.value - min) / range) * (height - padding * 2);
-    return `${x},${y}`;
-  });
-
-  return (
-    <div className="edit-card" style={{ marginBottom: "20px" }}>
-      <h3>{title}</h3>
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "220px" }}>
-        <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#999" />
-        <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#999" />
-        <polyline
-          fill="none"
-          stroke="#2563eb"
-          strokeWidth="3"
-          points={points.join(" ")}
-        />
-        {chartData.map((item, index) => {
-          const x = padding + (index * (width - padding * 2)) / (chartData.length - 1);
-          const y = height - padding - ((item.value - min) / range) * (height - padding * 2);
-
-          return <circle key={index} cx={x} cy={y} r="4" fill="#2563eb" />;
-        })}
-      </svg>
-    </div>
-  );
-}
-
-function formatDateForBackend(dateString) {
-  const parts = dateString.split("/");
-
-  if (parts.length !== 3) {
-    return dateString;
-  }
-
-  let month = parts[0].trim();
-  let day = parts[1].trim();
-  let year = parts[2].trim();
-
-  if (year.length === 2) {
-    year = "20" + year;
-  }
-
-  month = month.padStart(2, "0");
-  day = day.padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function formatDateForInput(dateString) {
-  if (!dateString) return "";
-
-  const parts = dateString.split("-");
-
-  if (parts.length !== 3) {
-    return dateString;
-  }
-
-  return `${parts[1]}/${parts[2]}/${parts[0]}`;
-}
-
-function formatDateForDisplay(dateString) {
-  if (!dateString) return "";
-
-  const parts = dateString.split("-");
-
-  if (parts.length !== 3) {
-    return dateString;
-  }
-
-  return `${parts[1]}/${parts[2]}/${parts[0]}`;
-}
-
-function formatTime(timeString) {
-  if (!timeString) return "";
-
-  const [hourString, minute] = timeString.split(":");
-  let hour = Number(hourString);
-  const suffix = hour >= 12 ? "PM" : "AM";
-
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-
-  return `${hour}:${minute} ${suffix}`;
-}
-
-function autoFormatDate(value) {
-  const numbersOnly = value.replace(/\D/g, "").slice(0, 8);
-
-  if (numbersOnly.length <= 2) return numbersOnly;
-  if (numbersOnly.length <= 4) return `${numbersOnly.slice(0, 2)}/${numbersOnly.slice(2)}`;
-  return `${numbersOnly.slice(0, 2)}/${numbersOnly.slice(2, 4)}/${numbersOnly.slice(4)}`;
-}
-
 function LogsPage({ auth, apiBase }) {
-  const emptyForm = {
+  const [logs, setLogs] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({
     jobName: "Job 1",
     logDate: "",
     logTime: "",
@@ -139,73 +29,104 @@ function LogsPage({ auth, apiBase }) {
     turnStatus: "",
     rainInches: "",
     notes: ""
-  };
-
-  const [logs, setLogs] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-  const [jobFilter, setJobFilter] = useState("");
-  const [windrowFilter, setWindrowFilter] = useState("");
-
-  const fetchLogs = async () => {
-    try {
-      const res = await fetch(`${apiBase}/api/logs`, {
-        headers: {
-          Authorization: `Basic ${auth}`
-        }
-      });
-
-      if (!res.ok) {
-        alert("Failed to load logs");
-        return;
-      }
-
-      const data = await res.json();
-      setLogs(data);
-    } catch (error) {
-      console.error("Error fetching logs:", error);
-      alert("Failed to load logs");
-    }
-  };
+  });
 
   useEffect(() => {
     fetchLogs();
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  async function fetchLogs() {
+    try {
+      const response = await fetch(`${apiBase}/api/logs`, {
+        headers: {
+          Authorization: auth
+        }
+      });
 
-    setForm({
-      ...form,
-      [name]: name === "logDate" ? autoFormatDate(value) : value
-    });
-  };
-
-  const handleDelete = async (id) => {
-    const res = await fetch(`${apiBase}/api/logs/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Basic ${auth}`
+      if (!response.ok) {
+        throw new Error("Failed to fetch logs");
       }
+
+      const data = await response.json();
+      setLogs(data);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function formatDateForDisplay(dateString) {
+    if (!dateString) return "";
+    const [year, month, day] = dateString.split("-");
+    return `${month}/${day}/${year}`;
+  }
+
+  function formatTime(timeString) {
+    if (!timeString) return "";
+    const [hourString, minute] = timeString.split(":");
+    let hour = Number(hourString);
+    const suffix = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${minute} ${suffix}`;
+  }
+
+  function formatChartLabel(log) {
+    return `${formatDateForDisplay(log.logDate)} ${formatTime(log.logTime)}`;
+  }
+
+  function averageTemp(log) {
+    const temps = [
+      Number(log.probe1TempBefore),
+      Number(log.probe2TempBefore),
+      Number(log.probe3TempBefore)
+    ].filter((value) => !Number.isNaN(value));
+
+    if (temps.length === 0) return null;
+
+    return temps.reduce((sum, value) => sum + value, 0) / temps.length;
+  }
+
+  const sortedLogs = useMemo(() => {
+    return [...logs].sort((a, b) => {
+      const aDateTime = new Date(`${a.logDate}T${a.logTime || "00:00"}`);
+      const bDateTime = new Date(`${b.logDate}T${b.logTime || "00:00"}`);
+      return aDateTime - bDateTime;
     });
+  }, [logs]);
 
-    if (!res.ok) {
-      alert("Failed to delete log");
-      return;
-    }
+  const moistureChartData = sortedLogs
+    .filter((log) => log.moisturePercent !== null && log.moisturePercent !== undefined)
+    .map((log) => ({
+      label: formatChartLabel(log),
+      value: log.moisturePercent
+    }));
 
-    if (editingId === id) {
-      setForm(emptyForm);
-      setEditingId(null);
-    }
+  const co2ChartData = sortedLogs
+    .filter((log) => log.co2Level !== null && log.co2Level !== undefined)
+    .map((log) => ({
+      label: formatChartLabel(log),
+      value: log.co2Level
+    }));
 
-    fetchLogs();
-  };
+  const avgTempChartData = sortedLogs
+    .map((log) => ({
+      label: formatChartLabel(log),
+      value: averageTemp(log)
+    }))
+    .filter((item) => item.value !== null);
 
-  const handleEdit = (log) => {
-    setForm({
+  const tempAfterChartData = sortedLogs
+    .filter((log) => log.tempAfter !== null && log.tempAfter !== undefined)
+    .map((log) => ({
+      label: formatChartLabel(log),
+      value: log.tempAfter
+    }));
+
+  function startEdit(log) {
+    setEditingId(log.id);
+    setEditForm({
       jobName: log.jobName ?? "Job 1",
-      logDate: formatDateForInput(log.logDate),
+      logDate: log.logDate ?? "",
       logTime: log.logTime ?? "",
       operatorName: log.operatorName ?? "",
       windrowRowNumber: log.windrow?.rowNumber ?? "",
@@ -220,365 +141,246 @@ function LogsPage({ auth, apiBase }) {
       rainInches: log.rainInches ?? "",
       notes: log.notes ?? ""
     });
+  }
 
-    setEditingId(log.id);
-  };
-
-  const handleCancelEdit = () => {
-    setForm(emptyForm);
+  function cancelEdit() {
     setEditingId(null);
-  };
+  }
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
+  function handleEditChange(event) {
+    const { name, value } = event.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  }
 
+  function toNumberOrNull(value) {
+    return value === "" ? null : Number(value);
+  }
+
+  async function saveEdit(id) {
     const payload = {
-      jobName: form.jobName,
-      logDate: formatDateForBackend(form.logDate),
-      logTime: form.logTime,
-      operatorName: form.operatorName,
-      probe1TempBefore: Number(form.probe1TempBefore),
-      probe2TempBefore: Number(form.probe2TempBefore),
-      probe3TempBefore: Number(form.probe3TempBefore),
-      tempAfter: Number(form.tempAfter),
-      moisturePercent: Number(form.moisturePercent),
-      waterAppliedGallons: form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
-      co2Level: form.co2Level === "" ? null : Number(form.co2Level),
-      turnStatus: form.turnStatus,
-      rainInches: form.rainInches === "" ? null : Number(form.rainInches),
-      notes: form.notes,
+      jobName: editForm.jobName,
+      logDate: editForm.logDate,
+      logTime: editForm.logTime,
+      operatorName: editForm.operatorName,
       windrow: {
-        rowNumber: form.windrowRowNumber
-      }
+        rowNumber: editForm.windrowRowNumber
+      },
+      probe1TempBefore: toNumberOrNull(editForm.probe1TempBefore),
+      probe2TempBefore: toNumberOrNull(editForm.probe2TempBefore),
+      probe3TempBefore: toNumberOrNull(editForm.probe3TempBefore),
+      tempAfter: toNumberOrNull(editForm.tempAfter),
+      moisturePercent: toNumberOrNull(editForm.moisturePercent),
+      waterAppliedGallons: toNumberOrNull(editForm.waterAppliedGallons),
+      co2Level: toNumberOrNull(editForm.co2Level),
+      turnStatus: editForm.turnStatus,
+      rainInches: toNumberOrNull(editForm.rainInches),
+      notes: editForm.notes
     };
 
     try {
-      const res = await fetch(`${apiBase}/api/logs/${editingId}`, {
+      const response = await fetch(`${apiBase}/api/logs/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Basic ${auth}`
+          Authorization: auth
         },
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) {
-        alert("Failed to update log");
-        return;
+      if (!response.ok) {
+        throw new Error("Failed to update log");
       }
 
-      alert("Log updated!");
-      setForm(emptyForm);
       setEditingId(null);
       fetchLogs();
     } catch (error) {
-      console.error("Error updating log:", error);
+      console.error(error);
       alert("Failed to update log");
     }
-  };
+  }
 
-  const filteredAndSortedLogs = useMemo(() => {
-    return [...logs]
-      .filter((log) => {
-        if (jobFilter && log.jobName !== jobFilter) {
-          return false;
+  async function deleteLog(id) {
+    const confirmed = window.confirm("Delete this log?");
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`${apiBase}/api/logs/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: auth
         }
-
-        if (windrowFilter && String(log.windrow?.rowNumber ?? "") !== windrowFilter) {
-          return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        const aDateTime = new Date(`${a.logDate}T${a.logTime || "00:00"}`);
-        const bDateTime = new Date(`${b.logDate}T${b.logTime || "00:00"}`);
-        return aDateTime - bDateTime;
       });
-  }, [logs, jobFilter, windrowFilter]);
 
-  return (
-    <div className="page-container">
-      <div className="logs-card">
-        <h1 className="page-title">Saved Logs</h1>
+      if (!response.ok) {
+        throw new Error("Failed to delete log");
+      }
 
-        <div className="form-grid" style={{ marginBottom: "20px" }}>
-          <div className="form-group">
-            <label>Filter by Job</label>
-            <select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)}>
-              <option value="">All Jobs</option>
-              <option value="Job 1">Job 1</option>
-              <option value="Job 2">Job 2</option>
-              <option value="Job 3">Job 3</option>
-            </select>
-          </div>
+      fetchLogs();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete log");
+    }
+  }
 
-          <div className="form-group">
-            <label>Filter by Windrow ID</label>
-            <input
-              value={windrowFilter}
-              onChange={(e) => setWindrowFilter(e.target.value)}
-              placeholder="Windrow ID"
-            />
-          </div>
-        </div>
-
-        <SimpleLineChart title="CO2 Over Time" data={filteredAndSortedLogs} dataKey="co2Level" />
-        <SimpleLineChart title="Average Temp Over Time" data={filteredAndSortedLogs} dataKey="avgTempBefore" />
-        <SimpleLineChart title="Temp After Over Time" data={filteredAndSortedLogs} dataKey="tempAfter" />
-        <SimpleLineChart title="Moisture Over Time" data={filteredAndSortedLogs} dataKey="moisturePercent" />
-
-        {editingId !== null && (
-          <div className="edit-card">
-            <h2>Edit Log</h2>
-
-            <form onSubmit={handleUpdate} className="log-form">
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Job</label>
-                  <select name="jobName" value={form.jobName} onChange={handleChange} required>
-                    <option value="Job 1">Job 1</option>
-                    <option value="Job 2">Job 2</option>
-                    <option value="Job 3">Job 3</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Date</label>
-                  <input
-                    name="logDate"
-                    required
-                    placeholder="MM/DD/YYYY"
-                    value={form.logDate}
-                    onChange={handleChange}
-                    maxLength="10"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Time</label>
-                  <input
-                    type="time"
-                    name="logTime"
-                    required
-                    value={form.logTime}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Operator Name</label>
-                  <input
-                    name="operatorName"
-                    required
-                    placeholder="Operator Name"
-                    value={form.operatorName}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Windrow ID</label>
-                  <input
-                    name="windrowRowNumber"
-                    required
-                    placeholder="Windrow ID"
-                    value={form.windrowRowNumber}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Probe 1 Temp</label>
-                  <input
-                    name="probe1TempBefore"
-                    required
-                    placeholder="Probe 1 Temp"
-                    value={form.probe1TempBefore}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Probe 2 Temp</label>
-                  <input
-                    name="probe2TempBefore"
-                    required
-                    placeholder="Probe 2 Temp"
-                    value={form.probe2TempBefore}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Probe 3 Temp</label>
-                  <input
-                    name="probe3TempBefore"
-                    required
-                    placeholder="Probe 3 Temp"
-                    value={form.probe3TempBefore}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Temp After</label>
-                  <input
-                    name="tempAfter"
-                    required
-                    placeholder="Temp After"
-                    value={form.tempAfter}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Moisture %</label>
-                  <input
-                    name="moisturePercent"
-                    required
-                    placeholder="Moisture %"
-                    value={form.moisturePercent}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>CO2</label>
-                  <input
-                    name="co2Level"
-                    placeholder="CO2"
-                    value={form.co2Level}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Water Applied Gallons</label>
-                  <input
-                    name="waterAppliedGallons"
-                    placeholder="Water Gallons"
-                    value={form.waterAppliedGallons}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Turn Status</label>
-                  <select
-                    name="turnStatus"
-                    required
-                    value={form.turnStatus}
-                    onChange={handleChange}
-                  >
-                    <option value="">Select Turn Status</option>
-                    <option value="TURNED">Turned</option>
-                    <option value="NOT TURNED">Not Turned</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Rain Inches</label>
-                  <input
-                    name="rainInches"
-                    placeholder="Rain Inches"
-                    value={form.rainInches}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Additional Notes</label>
-                <textarea
-                  name="notes"
-                  placeholder="Additional Notes"
-                  value={form.notes}
-                  onChange={handleChange}
-                  rows="4"
-                />
-              </div>
-
-              <div className="button-row">
-                <button type="submit" className="primary-button">
-                  Update Log
-                </button>
-                <button type="button" className="secondary-button" onClick={handleCancelEdit}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+  function ChartCard({ title, data }) {
+    return (
+      <div className="chart-card">
+        <h2>{title}</h2>
+        {data.length < 2 ? (
+          <p>Need at least 2 logs to draw this graph.</p>
+        ) : (
+          <div style={{ width: "100%", height: 300 }}>
+            <ResponsiveContainer>
+              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 70 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" angle={-30} textAnchor="end" height={80} interval={0} />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         )}
+      </div>
+    );
+  }
 
-        {filteredAndSortedLogs.length === 0 ? (
-          <p>No logs found.</p>
-        ) : (
-          <div className="table-wrapper">
-            <table className="logs-table">
-              <thead>
-                <tr>
-                  <th>Job</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th>Operator</th>
-                  <th>Windrow</th>
-                  <th>P1</th>
-                  <th>P2</th>
-                  <th>P3</th>
-                  <th>Avg Temp</th>
-                  <th>After</th>
-                  <th>Moisture</th>
-                  <th>CO2</th>
-                  <th>Water</th>
-                  <th>Turn</th>
-                  <th>Rain</th>
-                  <th>Notes</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+  return (
+    <div className="page-shell">
+      <ChartCard title="Moisture Over Time" data={moistureChartData} />
+      <ChartCard title="CO2 Over Time" data={co2ChartData} />
+      <ChartCard title="Average Temp Over Time" data={avgTempChartData} />
+      <ChartCard title="Temp After Over Time" data={tempAfterChartData} />
 
-              <tbody>
-                {[...filteredAndSortedLogs].reverse().map((log) => (
+      <div className="table-card">
+        <div className="table-scroll">
+          <table className="logs-table">
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Operator</th>
+                <th>Windrow</th>
+                <th>P1</th>
+                <th>P2</th>
+                <th>P3</th>
+                <th>Avg Temp</th>
+                <th>After</th>
+                <th>Moisture</th>
+                <th>CO2</th>
+                <th>Water</th>
+                <th>Turn</th>
+                <th>Rain</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {logs.map((log) => {
+                const isEditing = editingId === log.id;
+
+                if (isEditing) {
+                  return (
+                    <tr key={log.id}>
+                      <td>
+                        <select name="jobName" value={editForm.jobName} onChange={handleEditChange}>
+                          <option value="Job 1">Job 1</option>
+                          <option value="Job 2">Job 2</option>
+                          <option value="Job 3">Job 3</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input type="date" name="logDate" value={editForm.logDate} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input type="time" name="logTime" value={editForm.logTime} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="operatorName" value={editForm.operatorName} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="windrowRowNumber" value={editForm.windrowRowNumber} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="probe1TempBefore" value={editForm.probe1TempBefore} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="probe2TempBefore" value={editForm.probe2TempBefore} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="probe3TempBefore" value={editForm.probe3TempBefore} onChange={handleEditChange} />
+                      </td>
+                      <td>{averageTemp(editForm)?.toFixed?.(2) ?? ""}</td>
+                      <td>
+                        <input name="tempAfter" value={editForm.tempAfter} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="moisturePercent" value={editForm.moisturePercent} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="co2Level" value={editForm.co2Level} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input
+                          name="waterAppliedGallons"
+                          value={editForm.waterAppliedGallons}
+                          onChange={handleEditChange}
+                        />
+                      </td>
+                      <td>
+                        <select name="turnStatus" value={editForm.turnStatus} onChange={handleEditChange}>
+                          <option value="">Select Status</option>
+                          <option value="TURNED">Turned</option>
+                          <option value="NOT TURNED">Not Turned</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input name="rainInches" value={editForm.rainInches} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <input name="notes" value={editForm.notes} onChange={handleEditChange} />
+                      </td>
+                      <td>
+                        <button onClick={() => saveEdit(log.id)}>Save</button>
+                        <button onClick={cancelEdit}>Cancel</button>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return (
                   <tr key={log.id}>
                     <td>{log.jobName}</td>
                     <td>{formatDateForDisplay(log.logDate)}</td>
                     <td>{formatTime(log.logTime)}</td>
                     <td>{log.operatorName}</td>
-                    <td>{log.windrow?.rowNumber}</td>
-                    <td>{log.probe1TempBefore}</td>
-                    <td>{log.probe2TempBefore}</td>
-                    <td>{log.probe3TempBefore}</td>
-                    <td>{log.avgTempBefore}</td>
-                    <td>{log.tempAfter}</td>
-                    <td>{log.moisturePercent}</td>
-                    <td>{log.co2Level}</td>
-                    <td>{log.waterAppliedGallons}</td>
-                    <td>{log.turnStatus}</td>
-                    <td>{log.rainInches}</td>
-                    <td className="notes-cell">{log.notes}</td>
+                    <td>{log.windrow?.rowNumber ?? ""}</td>
+                    <td>{log.probe1TempBefore ?? ""}</td>
+                    <td>{log.probe2TempBefore ?? ""}</td>
+                    <td>{log.probe3TempBefore ?? ""}</td>
+                    <td>{averageTemp(log)?.toFixed(2) ?? ""}</td>
+                    <td>{log.tempAfter ?? ""}</td>
+                    <td>{log.moisturePercent ?? ""}</td>
+                    <td>{log.co2Level ?? ""}</td>
+                    <td>{log.waterAppliedGallons ?? ""}</td>
+                    <td>{log.turnStatus ?? ""}</td>
+                    <td>{log.rainInches ?? ""}</td>
+                    <td>{log.notes ?? ""}</td>
                     <td>
-                      <div className="action-buttons">
-                        <button
-                          onClick={() => handleEdit(log)}
-                          className="primary-button small-button"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(log.id)}
-                          className="danger-button small-button"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <button onClick={() => startEdit(log)}>Edit</button>
+                      <button onClick={() => deleteLog(log.id)}>Delete</button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
