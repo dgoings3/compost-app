@@ -6,10 +6,17 @@ import com.compostapp.backend.repository.DailyLogRepository;
 import com.compostapp.backend.repository.WindrowRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/logs")
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "https://windrowpro.com",
+        "https://www.windrowpro.com",
+        "https://compost-app-1.onrender.com"
+})
 public class DailyLogController {
 
     private final DailyLogRepository dailyLogRepository;
@@ -32,10 +39,7 @@ public class DailyLogController {
 
     @PostMapping
     public DailyLog createLog(@RequestBody DailyLog log) {
-        if (log.getTurnStatus() != null) {
-            log.setTurnStatus(log.getTurnStatus().toUpperCase());
-        }
-
+        normalizeLog(log);
         log.setWindrow(resolveWindrow(log));
         return dailyLogRepository.save(log);
     }
@@ -47,13 +51,36 @@ public class DailyLogController {
 
     @PutMapping("/{id}")
     public DailyLog updateLog(@PathVariable Long id, @RequestBody DailyLog updatedLog) {
-        if (updatedLog.getTurnStatus() != null) {
-            updatedLog.setTurnStatus(updatedLog.getTurnStatus().toUpperCase());
-        }
-
+        normalizeLog(updatedLog);
         updatedLog.setId(id);
         updatedLog.setWindrow(resolveWindrow(updatedLog));
         return dailyLogRepository.save(updatedLog);
+    }
+
+    private void normalizeLog(DailyLog log) {
+        if (log.getTurnStatus() != null) {
+            log.setTurnStatus(log.getTurnStatus().toUpperCase());
+        }
+
+        if (log.getJobName() != null) {
+            log.setJobName(log.getJobName().trim());
+        }
+
+        if (log.getOperatorName() != null) {
+            log.setOperatorName(log.getOperatorName().trim());
+        }
+
+        if (log.getNotes() != null) {
+            log.setNotes(log.getNotes().trim());
+        }
+
+        if (log.getProbe1TempBefore() != null && log.getProbe2TempBefore() != null && log.getProbe3TempBefore() != null) {
+            BigDecimal total = log.getProbe1TempBefore()
+                    .add(log.getProbe2TempBefore())
+                    .add(log.getProbe3TempBefore());
+
+            log.setAvgTempBefore(total.divide(BigDecimal.valueOf(3), 2, java.math.RoundingMode.HALF_UP));
+        }
     }
 
     private Windrow resolveWindrow(DailyLog log) {
@@ -64,11 +91,11 @@ public class DailyLogController {
         String rowNumber = log.getWindrow().getRowNumber().trim();
 
         return windrowRepository.findByRowNumber(rowNumber)
-            .orElseGet(() -> {
-                Windrow newWindrow = new Windrow();
-                newWindrow.setRowNumber(rowNumber);
-                newWindrow.setStatus("ACTIVE");
-                return windrowRepository.save(newWindrow);
-            });
+                .orElseGet(() -> {
+                    Windrow newWindrow = new Windrow();
+                    newWindrow.setRowNumber(rowNumber);
+                    newWindrow.setStatus("ACTIVE");
+                    return windrowRepository.save(newWindrow);
+                });
     }
 }

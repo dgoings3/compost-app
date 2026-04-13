@@ -1,9 +1,12 @@
 import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
-import { useState } from "react";
 
-const API_BASE = "https://compost-app.onrender.com";
+const API_BASE =
+  window.location.hostname === "localhost"
+    ? "http://localhost:8080"
+    : "https://compost-app.onrender.com";
 
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -106,7 +109,7 @@ function App() {
           path="/"
           element={
             <ProtectedRoute auth={auth}>
-              <LogForm auth={auth} />
+              <LogForm auth={auth} apiBase={API_BASE} />
             </ProtectedRoute>
           }
         />
@@ -114,7 +117,7 @@ function App() {
           path="/logs"
           element={
             <ProtectedRoute auth={auth}>
-              <LogsPage auth={auth} />
+              <LogsPage auth={auth} apiBase={API_BASE} />
             </ProtectedRoute>
           }
         />

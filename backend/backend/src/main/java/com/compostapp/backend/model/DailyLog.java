@@ -13,8 +13,8 @@ public class DailyLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String jobName;
     private String operatorName;
-
     private String logTime;
 
     @Column(length = 1000)
@@ -31,6 +31,7 @@ public class DailyLog {
 
     private BigDecimal moisturePercent;
     private BigDecimal waterAppliedGallons;
+    private BigDecimal co2;
 
     private String turnStatus;
 
@@ -40,12 +41,27 @@ public class DailyLog {
     @JoinColumn(name = "windrow_id", nullable = false)
     private Windrow windrow;
 
-    public DailyLog() {}
-
-    // getters and setters
+    public DailyLog() {
+    }
 
     public Long getId() {
         return id;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public String getOperatorName() {
+        return operatorName;
+    }
+
+    public String getLogTime() {
+        return logTime;
+    }
+
+    public String getNotes() {
+        return notes;
     }
 
     public LocalDate getLogDate() {
@@ -80,6 +96,10 @@ public class DailyLog {
         return waterAppliedGallons;
     }
 
+    public BigDecimal getCo2() {
+        return co2;
+    }
+
     public String getTurnStatus() {
         return turnStatus;
     }
@@ -94,6 +114,22 @@ public class DailyLog {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public void setJobName(String jobName) {
+        this.jobName = jobName;
+    }
+
+    public void setOperatorName(String operatorName) {
+        this.operatorName = operatorName;
+    }
+
+    public void setLogTime(String logTime) {
+        this.logTime = logTime;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
     public void setLogDate(LocalDate logDate) {
@@ -128,6 +164,10 @@ public class DailyLog {
         this.waterAppliedGallons = waterAppliedGallons;
     }
 
+    public void setCo2(BigDecimal co2) {
+        this.co2 = co2;
+    }
+
     public void setTurnStatus(String turnStatus) {
         this.turnStatus = turnStatus;
     }
@@ -139,28 +179,4 @@ public class DailyLog {
     public void setWindrow(Windrow windrow) {
         this.windrow = windrow;
     }
-
-    public String getOperatorName() {
-        return operatorName;
-    }
-
-    public String getLogTime() {
-        return logTime;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setOperatorName(String operatorName) {
-    this.operatorName = operatorName;
-}
-
-public void setLogTime(String logTime) {
-    this.logTime = logTime;
-}
-
-public void setNotes(String notes) {
-    this.notes = notes;
-}
 }

@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface DailyLogRepository extends JpaRepository<DailyLog, Long> {
     List<DailyLog> findByWindrowId(Long windrowId);
+    List<DailyLog> findByJobName(String jobName);
 }

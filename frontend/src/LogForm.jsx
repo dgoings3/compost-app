@@ -1,32 +1,42 @@
 import { useState } from "react";
 import "./App.css";
 
-const API_BASE = "https://compost-app.onrender.com";
-
-function LogForm({ auth }) {
+function LogForm({ auth, apiBase }) {
   const emptyForm = {
+    jobName: "Job 1",
     logDate: "",
     logTime: "",
     operatorName: "",
+    windrowRowNumber: "",
     probe1TempBefore: "",
     probe2TempBefore: "",
     probe3TempBefore: "",
     tempAfter: "",
     moisturePercent: "",
     waterAppliedGallons: "",
+    co2Level: "",
     turnStatus: "",
     rainInches: "",
-    notes: "",
-    windrowId: ""
+    notes: ""
   };
 
   const [form, setForm] = useState(emptyForm);
 
+  function autoFormatDate(value) {
+    const numbersOnly = value.replace(/\D/g, "").slice(0, 8);
+
+    if (numbersOnly.length <= 2) return numbersOnly;
+    if (numbersOnly.length <= 4) return `${numbersOnly.slice(0, 2)}/${numbersOnly.slice(2)}`;
+    return `${numbersOnly.slice(0, 2)}/${numbersOnly.slice(2, 4)}/${numbersOnly.slice(4)}`;
+  }
+
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: name === "logDate" ? autoFormatDate(value) : value
+    }));
   };
 
   function formatDateForBackend(dateString) {
@@ -54,6 +64,7 @@ function LogForm({ auth }) {
     e.preventDefault();
 
     const payload = {
+      jobName: form.jobName,
       logDate: formatDateForBackend(form.logDate),
       logTime: form.logTime,
       operatorName: form.operatorName,
@@ -62,19 +73,18 @@ function LogForm({ auth }) {
       probe3TempBefore: Number(form.probe3TempBefore),
       tempAfter: Number(form.tempAfter),
       moisturePercent: Number(form.moisturePercent),
-      waterAppliedGallons:
-        form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
+      waterAppliedGallons: form.waterAppliedGallons === "" ? null : Number(form.waterAppliedGallons),
+      co2Level: form.co2Level === "" ? null : Number(form.co2Level),
       turnStatus: form.turnStatus,
-      rainInches:
-        form.rainInches === "" ? null : Number(form.rainInches),
+      rainInches: form.rainInches === "" ? null : Number(form.rainInches),
       notes: form.notes,
       windrow: {
-        rowNumber: form.windrowId
+        rowNumber: form.windrowRowNumber
       }
     };
 
     try {
-      const res = await fetch(`${API_BASE}/api/logs`, {
+      const res = await fetch(`${apiBase}/api/logs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,13 +114,23 @@ function LogForm({ auth }) {
         <form onSubmit={handleSubmit} className="log-form">
           <div className="form-grid">
             <div className="form-group">
+              <label>Job</label>
+              <select name="jobName" value={form.jobName} onChange={handleChange} required>
+                <option value="Job 1">Job 1</option>
+                <option value="Job 2">Job 2</option>
+                <option value="Job 3">Job 3</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label>Date</label>
               <input
-                type="date"
                 name="logDate"
                 required
+                placeholder="MM/DD/YYYY"
                 value={form.logDate}
                 onChange={handleChange}
+                maxLength="10"
               />
             </div>
 
@@ -139,10 +159,10 @@ function LogForm({ auth }) {
             <div className="form-group">
               <label>Windrow ID</label>
               <input
-                name="windrowId"
+                name="windrowRowNumber"
                 required
                 placeholder="Windrow ID"
-                value={form.windrowId}
+                value={form.windrowRowNumber}
                 onChange={handleChange}
               />
             </div>
@@ -198,6 +218,16 @@ function LogForm({ auth }) {
                 required
                 placeholder="Moisture %"
                 value={form.moisturePercent}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>CO2</label>
+              <input
+                name="co2Level"
+                placeholder="CO2"
+                value={form.co2Level}
                 onChange={handleChange}
               />
             </div>
