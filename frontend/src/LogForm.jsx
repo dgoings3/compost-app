@@ -125,10 +125,11 @@ function LogForm({ auth, apiBase }) {
             <div className="form-group">
               <label>Date</label>
               <input
+                type="date"
                 name="logDate"
                 required
                 placeholder="MM/DD/YYYY"
-                value={form.logDate}
+                value={formData.logDate}
                 onChange={handleChange}
                 maxLength="10"
               />
