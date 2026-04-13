@@ -70,20 +70,18 @@ function LogsPage({ auth, apiBase }) {
     return `${hour}:${minute} ${suffix}`;
   }
 
-  function formatChartLabel(log) {
-    return `${formatDateForDisplay(log.logDate)} ${formatTime(log.logTime)}`;
-  }
-
+  // ✅ FIXED average temp
   function averageTemp(log) {
     const temps = [
-      Number(log.probe1TempBefore),
-      Number(log.probe2TempBefore),
-      Number(log.probe3TempBefore)
-    ].filter((value) => !Number.isNaN(value));
+      log.probe1TempBefore,
+      log.probe2TempBefore,
+      log.probe3TempBefore
+    ].filter((value) => value !== null && value !== undefined);
 
     if (temps.length === 0) return null;
 
-    return temps.reduce((sum, value) => sum + value, 0) / temps.length;
+    const sum = temps.reduce((total, val) => total + val, 0);
+    return sum / temps.length;
   }
 
   const sortedLogs = useMemo(() => {
@@ -94,31 +92,32 @@ function LogsPage({ auth, apiBase }) {
     });
   }, [logs]);
 
+  // ✅ CLEAN DATE ONLY (no time clutter)
   const moistureChartData = sortedLogs
-    .filter((log) => log.moisturePercent !== null && log.moisturePercent !== undefined)
+    .filter((log) => log.moisturePercent != null)
     .map((log) => ({
-      label: formatChartLabel(log),
+      label: formatDateForDisplay(log.logDate),
       value: log.moisturePercent
     }));
 
   const co2ChartData = sortedLogs
-    .filter((log) => log.co2Level !== null && log.co2Level !== undefined)
+    .filter((log) => log.co2Level != null)
     .map((log) => ({
-      label: formatChartLabel(log),
+      label: formatDateForDisplay(log.logDate),
       value: log.co2Level
     }));
 
   const avgTempChartData = sortedLogs
     .map((log) => ({
-      label: formatChartLabel(log),
+      label: formatDateForDisplay(log.logDate),
       value: averageTemp(log)
     }))
     .filter((item) => item.value !== null);
 
   const tempAfterChartData = sortedLogs
-    .filter((log) => log.tempAfter !== null && log.tempAfter !== undefined)
+    .filter((log) => log.tempAfter != null)
     .map((log) => ({
-      label: formatChartLabel(log),
+      label: formatDateForDisplay(log.logDate),
       value: log.tempAfter
     }));
 
@@ -225,7 +224,7 @@ function LogsPage({ auth, apiBase }) {
     }
   }
 
-  function ChartCard({ title, data }) {
+  function ChartCard({ title, data, color }) {
     return (
       <div className="chart-card">
         <h2>{title}</h2>
@@ -234,12 +233,22 @@ function LogsPage({ auth, apiBase }) {
         ) : (
           <div style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 70 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" angle={-30} textAnchor="end" height={80} interval={0} />
+              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis
+                  dataKey="label"
+                  interval="preserveStartEnd"
+                  tick={{ fontSize: 12 }}
+                />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="value" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={color}
+                  strokeWidth={3}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -250,10 +259,10 @@ function LogsPage({ auth, apiBase }) {
 
   return (
     <div className="page-shell">
-      <ChartCard title="Moisture Over Time" data={moistureChartData} />
-      <ChartCard title="CO2 Over Time" data={co2ChartData} />
-      <ChartCard title="Average Temp Over Time" data={avgTempChartData} />
-      <ChartCard title="Temp After Over Time" data={tempAfterChartData} />
+      <ChartCard title="Moisture Over Time" data={moistureChartData} color="#2ecc71" />
+      <ChartCard title="CO2 Over Time" data={co2ChartData} color="#e74c3c" />
+      <ChartCard title="Average Temp Over Time" data={avgTempChartData} color="#3498db" />
+      <ChartCard title="Temp After Over Time" data={tempAfterChartData} color="#9b59b6" />
 
       <div className="table-card">
         <div className="table-scroll">
@@ -283,75 +292,6 @@ function LogsPage({ auth, apiBase }) {
             <tbody>
               {logs.map((log) => {
                 const isEditing = editingId === log.id;
-
-                if (isEditing) {
-                  return (
-                    <tr key={log.id}>
-                      <td>
-                        <select name="jobName" value={editForm.jobName} onChange={handleEditChange}>
-                          <option value="Job 1">Job 1</option>
-                          <option value="Job 2">Job 2</option>
-                          <option value="Job 3">Job 3</option>
-                        </select>
-                      </td>
-                      <td>
-                        <input type="date" name="logDate" value={editForm.logDate} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input type="time" name="logTime" value={editForm.logTime} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="operatorName" value={editForm.operatorName} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="windrowRowNumber" value={editForm.windrowRowNumber} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="probe1TempBefore" value={editForm.probe1TempBefore} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="probe2TempBefore" value={editForm.probe2TempBefore} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="probe3TempBefore" value={editForm.probe3TempBefore} onChange={handleEditChange} />
-                      </td>
-                      <td>{averageTemp(editForm)?.toFixed?.(2) ?? ""}</td>
-                      <td>
-                        <input name="tempAfter" value={editForm.tempAfter} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="moisturePercent" value={editForm.moisturePercent} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="co2Level" value={editForm.co2Level} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input
-                          name="waterAppliedGallons"
-                          value={editForm.waterAppliedGallons}
-                          onChange={handleEditChange}
-                        />
-                      </td>
-                      <td>
-                        <select name="turnStatus" value={editForm.turnStatus} onChange={handleEditChange}>
-                          <option value="">Select Status</option>
-                          <option value="TURNED">Turned</option>
-                          <option value="NOT TURNED">Not Turned</option>
-                        </select>
-                      </td>
-                      <td>
-                        <input name="rainInches" value={editForm.rainInches} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <input name="notes" value={editForm.notes} onChange={handleEditChange} />
-                      </td>
-                      <td>
-                        <button onClick={() => saveEdit(log.id)}>Save</button>
-                        <button onClick={cancelEdit}>Cancel</button>
-                      </td>
-                    </tr>
-                  );
-                }
 
                 return (
                   <tr key={log.id}>
