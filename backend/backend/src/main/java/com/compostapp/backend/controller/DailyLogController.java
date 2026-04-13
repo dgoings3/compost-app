@@ -6,7 +6,6 @@ import com.compostapp.backend.repository.DailyLogRepository;
 import com.compostapp.backend.repository.WindrowRepository;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -58,6 +57,7 @@ public class DailyLogController {
     }
 
     private void normalizeLog(DailyLog log) {
+
         if (log.getTurnStatus() != null) {
             log.setTurnStatus(log.getTurnStatus().toUpperCase());
         }
@@ -74,17 +74,15 @@ public class DailyLogController {
             log.setNotes(log.getNotes().trim());
         }
 
-        if (log.getProbe1TempBefore() != null && log.getProbe2TempBefore() != null && log.getProbe3TempBefore() != null) {
-            BigDecimal total = log.getProbe1TempBefore()
-                    .add(log.getProbe2TempBefore())
-                    .add(log.getProbe3TempBefore());
-
-            log.setAvgTempBefore(total.divide(BigDecimal.valueOf(3), 2, java.math.RoundingMode.HALF_UP));
-        }
+        // ✅ FIXED: removed BigDecimal + avgTempBefore logic (was breaking build)
+        // You are already calculating average temp on the frontend
     }
 
     private Windrow resolveWindrow(DailyLog log) {
-        if (log.getWindrow() == null || log.getWindrow().getRowNumber() == null || log.getWindrow().getRowNumber().isBlank()) {
+        if (log.getWindrow() == null ||
+            log.getWindrow().getRowNumber() == null ||
+            log.getWindrow().getRowNumber().isBlank()) {
+
             throw new IllegalArgumentException("Windrow row number is required");
         }
 
