@@ -48,7 +48,6 @@ function LogsPage({ auth, apiBase }) {
       }
 
       const data = await response.json();
-      console.log("Fetched logs:", data);
       setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
@@ -226,21 +225,12 @@ function LogsPage({ auth, apiBase }) {
 
   function ChartCard({ title, data, color }) {
     return (
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "16px",
-          padding: "24px",
-          marginBottom: "24px",
-          boxShadow: "0 4px 14px rgba(0,0,0,0.08)"
-        }}
-      >
-        <h2 style={{ marginBottom: "16px" }}>{title}</h2>
-
+      <div className="chart-card">
+        <h2>{title}</h2>
         {data.length < 2 ? (
           <p>Need at least 2 logs to draw this graph.</p>
         ) : (
-          <div style={{ width: "100%", height: 300 }}>
+          <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer>
               <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -272,268 +262,193 @@ function LogsPage({ auth, apiBase }) {
 
   return (
     <div className="page-shell">
-      <div style={{ marginBottom: "28px" }}>
-        <h1 className="page-title">Saved Logs</h1>
-      </div>
+      <h1 className="page-title">Saved Logs</h1>
 
-      <div style={{ marginBottom: "40px" }}>
-        {newestFirstLogs.length === 0 ? (
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "24px",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.08)"
-            }}
-          >
-            <p style={{ margin: 0 }}>No saved logs yet.</p>
-          </div>
-        ) : (
-          newestFirstLogs.map((log, index) => {
-            const isEditing = editingId === log.id;
+      {newestFirstLogs.length === 0 ? (
+        <div className="logs-card">
+          <p>No saved logs yet.</p>
+        </div>
+      ) : (
+        newestFirstLogs.map((log, index) => {
+          const isEditing = editingId === log.id;
 
-            return (
-              <div
-                key={log.id ?? index}
-                style={{
-                  background: "#fff",
-                  borderRadius: "16px",
-                  padding: "24px",
-                  marginBottom: "22px",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
-                  border: "1px solid #e5e7eb"
-                }}
-              >
-                {!isEditing ? (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                        marginBottom: "20px"
-                      }}
-                    >
-                      <div>
-                        <h2 style={{ margin: "0 0 8px 0" }}>{log.jobName || "Log Entry"}</h2>
-                        <div style={{ fontSize: "15px", color: "#374151" }}>
-                          <strong>Date:</strong> {formatDateForDisplay(log.logDate)}{" "}
-                          <span style={{ marginLeft: "12px" }}>
-                            <strong>Time:</strong> {formatTime(log.logTime)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => startEdit(log)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => deleteLog(log.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
+          return (
+            <div
+              key={log.id ?? index}
+              className={isEditing ? "edit-card" : "logs-card"}
+            >
+              {!isEditing ? (
+                <>
+                  <div className="card-header">
+                    <div>
+                      <h2 style={{ marginBottom: "6px" }}>{log.jobName || "Log Entry"}</h2>
+                      <p style={{ margin: 0 }}>
+                        <strong>Date:</strong> {formatDateForDisplay(log.logDate)}
+                        <span style={{ marginLeft: "16px" }}>
+                          <strong>Time:</strong> {formatTime(log.logTime)}
+                        </span>
+                      </p>
                     </div>
 
-                    <div className="form-grid">
-                      <div className="form-group">
-                        <label>Operator Name</label>
-                        <input value={log.operatorName ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Windrow ID</label>
-                        <input value={log.windrow?.rowNumber ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 1 Temp</label>
-                        <input value={log.probe1TempBefore ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 2 Temp</label>
-                        <input value={log.probe2TempBefore ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 3 Temp</label>
-                        <input value={log.probe3TempBefore ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Average Temp</label>
-                        <input value={averageTemp(log)?.toFixed(2) ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Temp After</label>
-                        <input value={log.tempAfter ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Moisture %</label>
-                        <input value={log.moisturePercent ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Water Applied Gallons</label>
-                        <input value={log.waterAppliedGallons ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>CO2</label>
-                        <input value={log.co2Level ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Turn Status</label>
-                        <input value={log.turnStatus ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Rain Inches</label>
-                        <input value={log.rainInches ?? ""} readOnly />
-                      </div>
-
-                      <div className="form-group full-width">
-                        <label>Additional Notes</label>
-                        <textarea value={log.notes ?? ""} readOnly rows="4" />
-                      </div>
+                    <div className="action-buttons">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => startEdit(log)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => deleteLog(log.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                        marginBottom: "20px"
-                      }}
-                    >
-                      <h2 style={{ margin: 0 }}>Edit Log</h2>
+                  </div>
 
-                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="primary-button"
-                          onClick={() => saveEdit(log.id)}
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={cancelEdit}
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: "12px",
+                      marginTop: "18px"
+                    }}
+                  >
+                    <div className="compact-stat"><strong>Operator:</strong><br />{log.operatorName ?? ""}</div>
+                    <div className="compact-stat"><strong>Windrow:</strong><br />{log.windrow?.rowNumber ?? ""}</div>
+                    <div className="compact-stat"><strong>P1:</strong><br />{log.probe1TempBefore ?? ""}</div>
+                    <div className="compact-stat"><strong>P2:</strong><br />{log.probe2TempBefore ?? ""}</div>
+                    <div className="compact-stat"><strong>P3:</strong><br />{log.probe3TempBefore ?? ""}</div>
+                    <div className="compact-stat"><strong>Avg Temp:</strong><br />{averageTemp(log)?.toFixed(2) ?? ""}</div>
+                    <div className="compact-stat"><strong>After:</strong><br />{log.tempAfter ?? ""}</div>
+                    <div className="compact-stat"><strong>Moisture:</strong><br />{log.moisturePercent ?? ""}</div>
+                    <div className="compact-stat"><strong>Water:</strong><br />{log.waterAppliedGallons ?? ""}</div>
+                    <div className="compact-stat"><strong>CO2:</strong><br />{log.co2Level ?? ""}</div>
+                    <div className="compact-stat"><strong>Turn:</strong><br />{log.turnStatus ?? ""}</div>
+                    <div className="compact-stat"><strong>Rain:</strong><br />{log.rainInches ?? ""}</div>
+                  </div>
+
+                  {log.notes && (
+                    <div style={{ marginTop: "16px" }}>
+                      <strong>Notes:</strong>
+                      <p style={{ marginTop: "6px", marginBottom: 0 }}>{log.notes}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="card-header">
+                    <h2>Edit Log</h2>
+                    <div className="action-buttons">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => saveEdit(log.id)}
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={cancelEdit}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Job</label>
+                      <select name="jobName" value={editForm.jobName} onChange={handleEditChange}>
+                        <option value="Job 1">Job 1</option>
+                        <option value="Job 2">Job 2</option>
+                        <option value="Job 3">Job 3</option>
+                      </select>
                     </div>
 
-                    <div className="form-grid">
-                      <div className="form-group">
-                        <label>Job</label>
-                        <select name="jobName" value={editForm.jobName} onChange={handleEditChange}>
-                          <option value="Job 1">Job 1</option>
-                          <option value="Job 2">Job 2</option>
-                          <option value="Job 3">Job 3</option>
-                        </select>
-                      </div>
-
-                      <div className="form-group">
-                        <label>Date</label>
-                        <input type="date" name="logDate" value={editForm.logDate} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Time</label>
-                        <input type="time" name="logTime" value={editForm.logTime} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Operator Name</label>
-                        <input type="text" name="operatorName" value={editForm.operatorName} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Windrow ID</label>
-                        <input type="text" name="windrowRowNumber" value={editForm.windrowRowNumber} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 1 Temp</label>
-                        <input type="number" step="any" name="probe1TempBefore" value={editForm.probe1TempBefore} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 2 Temp</label>
-                        <input type="number" step="any" name="probe2TempBefore" value={editForm.probe2TempBefore} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Probe 3 Temp</label>
-                        <input type="number" step="any" name="probe3TempBefore" value={editForm.probe3TempBefore} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Temp After</label>
-                        <input type="number" step="any" name="tempAfter" value={editForm.tempAfter} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Moisture %</label>
-                        <input type="number" step="any" name="moisturePercent" value={editForm.moisturePercent} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Water Applied Gallons</label>
-                        <input type="number" step="any" name="waterAppliedGallons" value={editForm.waterAppliedGallons} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>CO2</label>
-                        <input type="number" step="any" name="co2Level" value={editForm.co2Level} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group">
-                        <label>Turn Status</label>
-                        <select name="turnStatus" value={editForm.turnStatus} onChange={handleEditChange}>
-                          <option value="">Select Status</option>
-                          <option value="TURNED">Turned</option>
-                          <option value="NOT TURNED">Not Turned</option>
-                        </select>
-                      </div>
-
-                      <div className="form-group">
-                        <label>Rain Inches</label>
-                        <input type="number" step="any" name="rainInches" value={editForm.rainInches} onChange={handleEditChange} />
-                      </div>
-
-                      <div className="form-group full-width">
-                        <label>Additional Notes</label>
-                        <textarea name="notes" rows="4" value={editForm.notes} onChange={handleEditChange} />
-                      </div>
+                    <div className="form-group">
+                      <label>Date</label>
+                      <input type="date" name="logDate" value={editForm.logDate} onChange={handleEditChange} />
                     </div>
-                  </>
-                )}
-              </div>
-            );
-          })
-        )}
-      </div>
+
+                    <div className="form-group">
+                      <label>Time</label>
+                      <input type="time" name="logTime" value={editForm.logTime} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Operator Name</label>
+                      <input type="text" name="operatorName" value={editForm.operatorName} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Windrow ID</label>
+                      <input type="text" name="windrowRowNumber" value={editForm.windrowRowNumber} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Probe 1 Temp</label>
+                      <input type="number" step="any" name="probe1TempBefore" value={editForm.probe1TempBefore} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Probe 2 Temp</label>
+                      <input type="number" step="any" name="probe2TempBefore" value={editForm.probe2TempBefore} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Probe 3 Temp</label>
+                      <input type="number" step="any" name="probe3TempBefore" value={editForm.probe3TempBefore} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Temp After</label>
+                      <input type="number" step="any" name="tempAfter" value={editForm.tempAfter} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Moisture %</label>
+                      <input type="number" step="any" name="moisturePercent" value={editForm.moisturePercent} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Water Applied Gallons</label>
+                      <input type="number" step="any" name="waterAppliedGallons" value={editForm.waterAppliedGallons} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>CO2</label>
+                      <input type="number" step="any" name="co2Level" value={editForm.co2Level} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Turn Status</label>
+                      <select name="turnStatus" value={editForm.turnStatus} onChange={handleEditChange}>
+                        <option value="">Select Status</option>
+                        <option value="TURNED">Turned</option>
+                        <option value="NOT TURNED">Not Turned</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Rain Inches</label>
+                      <input type="number" step="any" name="rainInches" value={editForm.rainInches} onChange={handleEditChange} />
+                    </div>
+
+                    <div className="form-group full-width">
+                      <label>Additional Notes</label>
+                      <textarea name="notes" rows="4" value={editForm.notes} onChange={handleEditChange} />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })
+      )}
 
       <ChartCard title="CO2" data={co2Data} color="#e74c3c" />
       <ChartCard title="Average Temp" data={avgTempData} color="#3498db" />
