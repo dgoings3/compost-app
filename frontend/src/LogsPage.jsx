@@ -12,24 +12,6 @@ import "./App.css";
 
 function LogsPage({ auth, apiBase }) {
   const [logs, setLogs] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({
-    jobName: "Job 1",
-    logDate: "",
-    logTime: "",
-    operatorName: "",
-    windrowRowNumber: "",
-    probe1TempBefore: "",
-    probe2TempBefore: "",
-    probe3TempBefore: "",
-    tempAfter: "",
-    moisturePercent: "",
-    waterAppliedGallons: "",
-    co2Level: "",
-    turnStatus: "",
-    rainInches: "",
-    notes: ""
-  });
 
   useEffect(() => {
     fetchLogs();
@@ -38,14 +20,8 @@ function LogsPage({ auth, apiBase }) {
   async function fetchLogs() {
     try {
       const response = await fetch(`${apiBase}/api/logs`, {
-        headers: {
-          Authorization: auth
-        }
+        headers: { Authorization: auth }
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch logs");
-      }
 
       const data = await response.json();
       setLogs(data);
@@ -53,6 +29,59 @@ function LogsPage({ auth, apiBase }) {
       console.error(error);
     }
   }
+
+  // ✅ FIXED average temp
+  function averageTemp(log) {
+    const temps = [
+      log.probe1TempBefore,
+      log.probe2TempBefore,
+      log.probe3TempBefore
+    ]
+      .map((v) => (v === null || v === undefined ? null : Number(v)))
+      .filter((v) => v !== null && !isNaN(v));
+
+    if (temps.length === 0) return null;
+
+    const sum = temps.reduce((total, val) => total + val, 0);
+    return sum / temps.length;
+  }
+
+  const sortedLogs = useMemo(() => {
+    return [...logs].sort((a, b) => {
+      const aDate = new Date(`${a.logDate}T${a.logTime || "00:00"}`);
+      const bDate = new Date(`${b.logDate}T${b.logTime || "00:00"}`);
+      return aDate - bDate;
+    });
+  }, [logs]);
+
+  // ✅ CLEAN chart data (date + value)
+  const co2ChartData = sortedLogs
+    .filter((log) => log.co2Level != null)
+    .map((log) => ({
+      date: log.logDate,
+      value: log.co2Level
+    }));
+
+  const moistureChartData = sortedLogs
+    .filter((log) => log.moisturePercent != null)
+    .map((log) => ({
+      date: log.logDate,
+      value: log.moisturePercent
+    }));
+
+  const avgTempChartData = sortedLogs
+    .map((log) => ({
+      date: log.logDate,
+      value: averageTemp(log)
+    }))
+    .filter((item) => item.value != null);
+
+  const tempAfterChartData = sortedLogs
+    .filter((log) => log.tempAfter != null)
+    .map((log) => ({
+      date: log.logDate,
+      value: log.tempAfter
+    }));
 
   function formatDateForDisplay(dateString) {
     if (!dateString) return "";
@@ -70,160 +99,6 @@ function LogsPage({ auth, apiBase }) {
     return `${hour}:${minute} ${suffix}`;
   }
 
-  // ✅ FIXED average temp
-  function averageTemp(log) {
-    const temps = [
-      log.probe1TempBefore,
-      log.probe2TempBefore,
-      log.probe3TempBefore
-    ].filter((value) => value !== null && value !== undefined);
-
-    if (temps.length === 0) return null;
-
-    const sum = temps.reduce((total, val) => total + val, 0);
-    return sum / temps.length;
-  }
-
-  const sortedLogs = useMemo(() => {
-    return [...logs].sort((a, b) => {
-      const aDateTime = new Date(`${a.logDate}T${a.logTime || "00:00"}`);
-      const bDateTime = new Date(`${b.logDate}T${b.logTime || "00:00"}`);
-      return aDateTime - bDateTime;
-    });
-  }, [logs]);
-
-  // ✅ CLEAN DATE ONLY (no time clutter)
-  const moistureChartData = sortedLogs
-    .filter((log) => log.moisturePercent != null)
-    .map((log) => ({
-      label: formatDateForDisplay(log.logDate),
-      value: log.moisturePercent
-    }));
-
-  const co2ChartData = sortedLogs
-    .filter((log) => log.co2Level != null)
-    .map((log) => ({
-      label: formatDateForDisplay(log.logDate),
-      value: log.co2Level
-    }));
-
-  const avgTempChartData = sortedLogs
-    .map((log) => ({
-      label: formatDateForDisplay(log.logDate),
-      value: averageTemp(log)
-    }))
-    .filter((item) => item.value !== null);
-
-  const tempAfterChartData = sortedLogs
-    .filter((log) => log.tempAfter != null)
-    .map((log) => ({
-      label: formatDateForDisplay(log.logDate),
-      value: log.tempAfter
-    }));
-
-  function startEdit(log) {
-    setEditingId(log.id);
-    setEditForm({
-      jobName: log.jobName ?? "Job 1",
-      logDate: log.logDate ?? "",
-      logTime: log.logTime ?? "",
-      operatorName: log.operatorName ?? "",
-      windrowRowNumber: log.windrow?.rowNumber ?? "",
-      probe1TempBefore: log.probe1TempBefore ?? "",
-      probe2TempBefore: log.probe2TempBefore ?? "",
-      probe3TempBefore: log.probe3TempBefore ?? "",
-      tempAfter: log.tempAfter ?? "",
-      moisturePercent: log.moisturePercent ?? "",
-      waterAppliedGallons: log.waterAppliedGallons ?? "",
-      co2Level: log.co2Level ?? "",
-      turnStatus: log.turnStatus ?? "",
-      rainInches: log.rainInches ?? "",
-      notes: log.notes ?? ""
-    });
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-  }
-
-  function handleEditChange(event) {
-    const { name, value } = event.target;
-    setEditForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  }
-
-  function toNumberOrNull(value) {
-    return value === "" ? null : Number(value);
-  }
-
-  async function saveEdit(id) {
-    const payload = {
-      jobName: editForm.jobName,
-      logDate: editForm.logDate,
-      logTime: editForm.logTime,
-      operatorName: editForm.operatorName,
-      windrow: {
-        rowNumber: editForm.windrowRowNumber
-      },
-      probe1TempBefore: toNumberOrNull(editForm.probe1TempBefore),
-      probe2TempBefore: toNumberOrNull(editForm.probe2TempBefore),
-      probe3TempBefore: toNumberOrNull(editForm.probe3TempBefore),
-      tempAfter: toNumberOrNull(editForm.tempAfter),
-      moisturePercent: toNumberOrNull(editForm.moisturePercent),
-      waterAppliedGallons: toNumberOrNull(editForm.waterAppliedGallons),
-      co2Level: toNumberOrNull(editForm.co2Level),
-      turnStatus: editForm.turnStatus,
-      rainInches: toNumberOrNull(editForm.rainInches),
-      notes: editForm.notes
-    };
-
-    try {
-      const response = await fetch(`${apiBase}/api/logs/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: auth
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update log");
-      }
-
-      setEditingId(null);
-      fetchLogs();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to update log");
-    }
-  }
-
-  async function deleteLog(id) {
-    const confirmed = window.confirm("Delete this log?");
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`${apiBase}/api/logs/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: auth
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete log");
-      }
-
-      fetchLogs();
-    } catch (error) {
-      console.error(error);
-      alert("Failed to delete log");
-    }
-  }
-
   function ChartCard({ title, data, color }) {
     return (
       <div className="chart-card">
@@ -233,15 +108,22 @@ function LogsPage({ auth, apiBase }) {
         ) : (
           <div style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 40 }}>
+              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+
                 <XAxis
-                  dataKey="label"
-                  interval="preserveStartEnd"
-                  tick={{ fontSize: 12 }}
+                  dataKey="date"
+                  tickFormatter={(date) => {
+                    if (!date) return "";
+                    const [y, m, d] = date.split("-");
+                    return `${m}/${d}`;
+                  }}
                 />
+
                 <YAxis />
+
                 <Tooltip />
+
                 <Line
                   type="monotone"
                   dataKey="value"
@@ -259,10 +141,10 @@ function LogsPage({ auth, apiBase }) {
 
   return (
     <div className="page-shell">
-      <ChartCard title="Moisture Over Time" data={moistureChartData} color="#2ecc71" />
       <ChartCard title="CO2 Over Time" data={co2ChartData} color="#e74c3c" />
       <ChartCard title="Average Temp Over Time" data={avgTempChartData} color="#3498db" />
       <ChartCard title="Temp After Over Time" data={tempAfterChartData} color="#9b59b6" />
+      <ChartCard title="Moisture Over Time" data={moistureChartData} color="#2ecc71" />
 
       <div className="table-card">
         <div className="table-scroll">
@@ -285,39 +167,30 @@ function LogsPage({ auth, apiBase }) {
                 <th>Turn</th>
                 <th>Rain</th>
                 <th>Notes</th>
-                <th>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {logs.map((log) => {
-                const isEditing = editingId === log.id;
-
-                return (
-                  <tr key={log.id}>
-                    <td>{log.jobName}</td>
-                    <td>{formatDateForDisplay(log.logDate)}</td>
-                    <td>{formatTime(log.logTime)}</td>
-                    <td>{log.operatorName}</td>
-                    <td>{log.windrow?.rowNumber ?? ""}</td>
-                    <td>{log.probe1TempBefore ?? ""}</td>
-                    <td>{log.probe2TempBefore ?? ""}</td>
-                    <td>{log.probe3TempBefore ?? ""}</td>
-                    <td>{averageTemp(log)?.toFixed(2) ?? ""}</td>
-                    <td>{log.tempAfter ?? ""}</td>
-                    <td>{log.moisturePercent ?? ""}</td>
-                    <td>{log.co2Level ?? ""}</td>
-                    <td>{log.waterAppliedGallons ?? ""}</td>
-                    <td>{log.turnStatus ?? ""}</td>
-                    <td>{log.rainInches ?? ""}</td>
-                    <td>{log.notes ?? ""}</td>
-                    <td>
-                      <button onClick={() => startEdit(log)}>Edit</button>
-                      <button onClick={() => deleteLog(log.id)}>Delete</button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {logs.map((log) => (
+                <tr key={log.id}>
+                  <td>{log.jobName}</td>
+                  <td>{formatDateForDisplay(log.logDate)}</td>
+                  <td>{formatTime(log.logTime)}</td>
+                  <td>{log.operatorName}</td>
+                  <td>{log.windrow?.rowNumber ?? ""}</td>
+                  <td>{log.probe1TempBefore ?? ""}</td>
+                  <td>{log.probe2TempBefore ?? ""}</td>
+                  <td>{log.probe3TempBefore ?? ""}</td>
+                  <td>{averageTemp(log)?.toFixed(2) ?? ""}</td>
+                  <td>{log.tempAfter ?? ""}</td>
+                  <td>{log.moisturePercent ?? ""}</td>
+                  <td>{log.co2Level ?? ""}</td>
+                  <td>{log.waterAppliedGallons ?? ""}</td>
+                  <td>{log.turnStatus ?? ""}</td>
+                  <td>{log.rainInches ?? ""}</td>
+                  <td>{log.notes ?? ""}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
