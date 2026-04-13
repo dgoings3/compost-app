@@ -2,42 +2,49 @@ import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
+import "./App.css";
 
 const API_BASE =
   window.location.hostname === "localhost"
     ? "http://localhost:8080"
     : "https://compost-app.onrender.com";
 
+function normalizeAuth(authValue) {
+  if (!authValue) return "";
+  return authValue.startsWith("Basic ") ? authValue : `Basic ${authValue}`;
+}
+
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-    const auth = btoa(`${username}:${password}`);
+    const encodedAuth = btoa(`${username}:${password}`);
+    const fullAuth = `Basic ${encodedAuth}`;
 
     try {
-      const res = await fetch(`${API_BASE}/api/logs`, {
+      const response = await fetch(`${API_BASE}/api/logs`, {
         headers: {
-          Authorization: `Basic ${auth}`
+          Authorization: fullAuth
         }
       });
 
-      if (!res.ok) {
+      if (!response.ok) {
         alert("Invalid username or password");
         return;
       }
 
-      sessionStorage.setItem("auth", auth);
-      onLogin(auth);
+      sessionStorage.setItem("auth", fullAuth);
+      onLogin(fullAuth);
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
       alert("Login failed");
     }
-  };
+  }
 
   return (
     <div className="page-container">
@@ -49,7 +56,7 @@ function LoginPage({ onLogin }) {
             <label>Username</label>
             <input
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(event) => setUsername(event.target.value)}
               placeholder="Username"
               required
             />
@@ -60,7 +67,7 @@ function LoginPage({ onLogin }) {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(event) => setPassword(event.target.value)}
               placeholder="Password"
               required
             />
@@ -84,17 +91,30 @@ function ProtectedRoute({ auth, children }) {
 }
 
 function App() {
-  const [auth, setAuth] = useState(sessionStorage.getItem("auth") || "");
+  const [auth, setAuth] = useState(normalizeAuth(sessionStorage.getItem("auth") || ""));
 
-  const handleLogout = () => {
+  function handleLogin(newAuth) {
+    const normalized = normalizeAuth(newAuth);
+    sessionStorage.setItem("auth", normalized);
+    setAuth(normalized);
+  }
+
+  function handleLogout() {
     sessionStorage.removeItem("auth");
     setAuth("");
-  };
+  }
 
   return (
     <div className="page-container">
       {auth && (
-        <nav style={{ marginBottom: "20px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <nav
+          style={{
+            marginBottom: "20px",
+            display: "flex",
+            gap: "12px",
+            flexWrap: "wrap"
+          }}
+        >
           <Link to="/">Log Entry</Link>
           <Link to="/logs">Saved Logs</Link>
           <button type="button" className="secondary-button" onClick={handleLogout}>
@@ -104,7 +124,7 @@ function App() {
       )}
 
       <Routes>
-        <Route path="/login" element={<LoginPage onLogin={setAuth} />} />
+        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
         <Route
           path="/"
           element={
