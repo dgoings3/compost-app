@@ -48,9 +48,11 @@ function LogsPage({ auth, apiBase }) {
       }
 
       const data = await response.json();
-      setLogs(data);
+      console.log("Fetched logs:", data);
+      setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
+      setLogs([]);
     }
   }
 
@@ -81,15 +83,28 @@ function LogsPage({ auth, apiBase }) {
 
   function formatTime(timeString) {
     if (!timeString) return "";
-    const [hourString, minute] = timeString.split(":");
-    let hour = Number(hourString);
+    const parts = timeString.split(":");
+    if (parts.length < 2) return timeString;
+
+    let hour = Number(parts[0]);
+    const minute = parts[1];
     const suffix = hour >= 12 ? "PM" : "AM";
+
     hour = hour % 12;
     if (hour === 0) hour = 12;
+
     return `${hour}:${minute} ${suffix}`;
   }
 
-  const sortedLogs = useMemo(() => {
+  const newestFirstLogs = useMemo(() => {
+    return [...logs].sort((a, b) => {
+      const aDate = new Date(`${a.logDate || ""}T${a.logTime || "00:00"}`);
+      const bDate = new Date(`${b.logDate || ""}T${b.logTime || "00:00"}`);
+      return bDate - aDate;
+    });
+  }, [logs]);
+
+  const oldestFirstLogs = useMemo(() => {
     return [...logs].sort((a, b) => {
       const aDate = new Date(`${a.logDate || ""}T${a.logTime || "00:00"}`);
       const bDate = new Date(`${b.logDate || ""}T${b.logTime || "00:00"}`);
@@ -98,7 +113,7 @@ function LogsPage({ auth, apiBase }) {
   }, [logs]);
 
   const buildChartData = (valueGetter) =>
-    sortedLogs
+    oldestFirstLogs
       .map((log) => ({
         date: log.logDate || "",
         value: valueGetter(log)
@@ -211,14 +226,23 @@ function LogsPage({ auth, apiBase }) {
 
   function ChartCard({ title, data, color }) {
     return (
-      <div className="chart-card">
-        <h2>{title}</h2>
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "16px",
+          padding: "24px",
+          marginBottom: "24px",
+          boxShadow: "0 4px 14px rgba(0,0,0,0.08)"
+        }}
+      >
+        <h2 style={{ marginBottom: "16px" }}>{title}</h2>
+
         {data.length < 2 ? (
           <p>Need at least 2 logs to draw this graph.</p>
         ) : (
           <div style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 20 }}>
+              <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis
                   dataKey="date"
@@ -248,24 +272,38 @@ function LogsPage({ auth, apiBase }) {
 
   return (
     <div className="page-shell">
-      <ChartCard title="CO2" data={co2Data} color="#e74c3c" />
-      <ChartCard title="Average Temp" data={avgTempData} color="#3498db" />
-      <ChartCard title="Temp After" data={tempAfterData} color="#8e44ad" />
-      <ChartCard title="Moisture" data={moistureData} color="#2e8b57" />
+      <div style={{ marginBottom: "28px" }}>
+        <h1 className="page-title">Saved Logs</h1>
+      </div>
 
-      <div className="logs-card-list">
-        {logs
-          .slice()
-          .sort((a, b) => {
-            const aDate = new Date(`${a.logDate || ""}T${a.logTime || "00:00"}`);
-            const bDate = new Date(`${b.logDate || ""}T${b.logTime || "00:00"}`);
-            return bDate - aDate;
-          })
-          .map((log) => {
+      <div style={{ marginBottom: "40px" }}>
+        {newestFirstLogs.length === 0 ? (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "16px",
+              padding: "24px",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.08)"
+            }}
+          >
+            <p style={{ margin: 0 }}>No saved logs yet.</p>
+          </div>
+        ) : (
+          newestFirstLogs.map((log, index) => {
             const isEditing = editingId === log.id;
 
             return (
-              <div key={log.id} className="table-card" style={{ marginBottom: "20px" }}>
+              <div
+                key={log.id ?? index}
+                style={{
+                  background: "#fff",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  marginBottom: "22px",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                  border: "1px solid #e5e7eb"
+                }}
+              >
                 {!isEditing ? (
                   <>
                     <div
@@ -275,15 +313,17 @@ function LogsPage({ auth, apiBase }) {
                         alignItems: "center",
                         gap: "12px",
                         flexWrap: "wrap",
-                        marginBottom: "16px"
+                        marginBottom: "20px"
                       }}
                     >
                       <div>
-                        <h2 style={{ marginBottom: "6px" }}>{log.jobName || "Log Entry"}</h2>
-                        <p style={{ margin: 0 }}>
+                        <h2 style={{ margin: "0 0 8px 0" }}>{log.jobName || "Log Entry"}</h2>
+                        <div style={{ fontSize: "15px", color: "#374151" }}>
                           <strong>Date:</strong> {formatDateForDisplay(log.logDate)}{" "}
-                          <strong style={{ marginLeft: "12px" }}>Time:</strong> {formatTime(log.logTime)}
-                        </p>
+                          <span style={{ marginLeft: "12px" }}>
+                            <strong>Time:</strong> {formatTime(log.logTime)}
+                          </span>
+                        </div>
                       </div>
 
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
@@ -380,10 +420,10 @@ function LogsPage({ auth, apiBase }) {
                         alignItems: "center",
                         gap: "12px",
                         flexWrap: "wrap",
-                        marginBottom: "16px"
+                        marginBottom: "20px"
                       }}
                     >
-                      <h2 style={{ marginBottom: 0 }}>Edit Log</h2>
+                      <h2 style={{ margin: 0 }}>Edit Log</h2>
 
                       <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                         <button
@@ -415,128 +455,62 @@ function LogsPage({ auth, apiBase }) {
 
                       <div className="form-group">
                         <label>Date</label>
-                        <input
-                          type="date"
-                          name="logDate"
-                          value={editForm.logDate}
-                          onChange={handleEditChange}
-                        />
+                        <input type="date" name="logDate" value={editForm.logDate} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Time</label>
-                        <input
-                          type="time"
-                          name="logTime"
-                          value={editForm.logTime}
-                          onChange={handleEditChange}
-                        />
+                        <input type="time" name="logTime" value={editForm.logTime} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Operator Name</label>
-                        <input
-                          type="text"
-                          name="operatorName"
-                          value={editForm.operatorName}
-                          onChange={handleEditChange}
-                        />
+                        <input type="text" name="operatorName" value={editForm.operatorName} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Windrow ID</label>
-                        <input
-                          type="text"
-                          name="windrowRowNumber"
-                          value={editForm.windrowRowNumber}
-                          onChange={handleEditChange}
-                        />
+                        <input type="text" name="windrowRowNumber" value={editForm.windrowRowNumber} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Probe 1 Temp</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="probe1TempBefore"
-                          value={editForm.probe1TempBefore}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="probe1TempBefore" value={editForm.probe1TempBefore} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Probe 2 Temp</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="probe2TempBefore"
-                          value={editForm.probe2TempBefore}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="probe2TempBefore" value={editForm.probe2TempBefore} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Probe 3 Temp</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="probe3TempBefore"
-                          value={editForm.probe3TempBefore}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="probe3TempBefore" value={editForm.probe3TempBefore} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Temp After</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="tempAfter"
-                          value={editForm.tempAfter}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="tempAfter" value={editForm.tempAfter} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Moisture %</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="moisturePercent"
-                          value={editForm.moisturePercent}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="moisturePercent" value={editForm.moisturePercent} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Water Applied Gallons</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="waterAppliedGallons"
-                          value={editForm.waterAppliedGallons}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="waterAppliedGallons" value={editForm.waterAppliedGallons} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>CO2</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="co2Level"
-                          value={editForm.co2Level}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="co2Level" value={editForm.co2Level} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group">
                         <label>Turn Status</label>
-                        <select
-                          name="turnStatus"
-                          value={editForm.turnStatus}
-                          onChange={handleEditChange}
-                        >
+                        <select name="turnStatus" value={editForm.turnStatus} onChange={handleEditChange}>
                           <option value="">Select Status</option>
                           <option value="TURNED">Turned</option>
                           <option value="NOT TURNED">Not Turned</option>
@@ -545,31 +519,26 @@ function LogsPage({ auth, apiBase }) {
 
                       <div className="form-group">
                         <label>Rain Inches</label>
-                        <input
-                          type="number"
-                          step="any"
-                          name="rainInches"
-                          value={editForm.rainInches}
-                          onChange={handleEditChange}
-                        />
+                        <input type="number" step="any" name="rainInches" value={editForm.rainInches} onChange={handleEditChange} />
                       </div>
 
                       <div className="form-group full-width">
                         <label>Additional Notes</label>
-                        <textarea
-                          name="notes"
-                          rows="4"
-                          value={editForm.notes}
-                          onChange={handleEditChange}
-                        />
+                        <textarea name="notes" rows="4" value={editForm.notes} onChange={handleEditChange} />
                       </div>
                     </div>
                   </>
                 )}
               </div>
             );
-          })}
+          })
+        )}
       </div>
+
+      <ChartCard title="CO2" data={co2Data} color="#e74c3c" />
+      <ChartCard title="Average Temp" data={avgTempData} color="#3498db" />
+      <ChartCard title="Temp After" data={tempAfterData} color="#8e44ad" />
+      <ChartCard title="Moisture" data={moistureData} color="#2e8b57" />
     </div>
   );
 }
