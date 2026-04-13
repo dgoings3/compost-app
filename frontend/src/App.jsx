@@ -2,6 +2,7 @@ import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
+import AnalyticsPage from "./AnalyticsPage";
 import "./App.css";
 
 const API_BASE =
@@ -117,6 +118,7 @@ function App() {
         >
           <Link to="/">Log Entry</Link>
           <Link to="/logs">Saved Logs</Link>
+          <Link to="/analytics">Analytics</Link>
           <button type="button" className="secondary-button" onClick={handleLogout}>
             Log Out
           </button>
@@ -125,6 +127,7 @@ function App() {
 
       <Routes>
         <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+
         <Route
           path="/"
           element={
@@ -133,11 +136,21 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/logs"
           element={
             <ProtectedRoute auth={auth}>
               <LogsPage auth={auth} apiBase={API_BASE} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute auth={auth}>
+              <AnalyticsPage auth={auth} apiBase={API_BASE} />
             </ProtectedRoute>
           }
         />

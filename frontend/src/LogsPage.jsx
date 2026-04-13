@@ -1,13 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
 import "./App.css";
 
 function LogsPage({ auth, apiBase }) {
@@ -129,9 +120,7 @@ function LogsPage({ auth, apiBase }) {
 
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
-      const matchesJob =
-        selectedJob === "ALL" || log.jobName === selectedJob;
-
+      const matchesJob = selectedJob === "ALL" || log.jobName === selectedJob;
       const matchesWindrow =
         selectedWindrow === "ALL" ||
         String(log.windrow?.rowNumber ?? "") === selectedWindrow;
@@ -147,30 +136,6 @@ function LogsPage({ auth, apiBase }) {
       return bDate - aDate;
     });
   }, [filteredLogs]);
-
-  const oldestFirstLogs = useMemo(() => {
-    return [...filteredLogs].sort((a, b) => {
-      const aDate = new Date(`${a.logDate || ""}T${a.logTime || "00:00"}`);
-      const bDate = new Date(`${b.logDate || ""}T${b.logTime || "00:00"}`);
-      return aDate - bDate;
-    });
-  }, [filteredLogs]);
-
-  function buildChartData(valueGetter) {
-    return oldestFirstLogs
-      .map((log) => ({
-        date: log.logDate || "",
-        value: valueGetter(log)
-      }))
-      .filter((item) => item.value != null && !Number.isNaN(item.value));
-  }
-
-  const co2Data = buildChartData((log) => toNumberOrNull(log.co2Level));
-  const avgTempData = buildChartData((log) => averageTemp(log));
-  const tempAfterData = buildChartData((log) => toNumberOrNull(log.tempAfter));
-  const moistureData = buildChartData((log) =>
-    toNumberOrNull(log.moisturePercent)
-  );
 
   function startEdit(log) {
     setEditingId(log.id);
@@ -271,68 +236,23 @@ function LogsPage({ auth, apiBase }) {
     }
   }
 
-  function ChartCard({ title, data, color }) {
-    return (
-      <div className="chart-card">
-        <h2>{title}</h2>
-
-        {data.length < 2 ? (
-          <p>Need at least 2 logs to draw this graph.</p>
-        ) : (
-          <div style={{ width: "100%", height: 280 }}>
-            <ResponsiveContainer>
-              <LineChart
-                data={data}
-                margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(date) => {
-                    if (!date || typeof date !== "string") return "";
-                    const parts = date.split("-");
-                    if (parts.length !== 3) return date;
-                    return `${parts[1]}/${parts[2]}`;
-                  }}
-                />
-                <YAxis />
-                <Tooltip
-                  formatter={(value) => [value, "Value"]}
-                  labelFormatter={(label) => formatDateForDisplay(label)}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="value"
-                  stroke={color}
-                  strokeWidth={3}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="page-shell">
       <h1 className="page-title">Saved Logs</h1>
 
       <div
+        className="form-card"
         style={{
+          marginBottom: "20px",
           display: "flex",
           gap: "16px",
           flexWrap: "wrap",
-          marginBottom: "24px"
+          alignItems: "end"
         }}
       >
         <div className="form-group" style={{ minWidth: "220px", marginBottom: 0 }}>
           <label>Filter by Job</label>
-          <select
-            value={selectedJob}
-            onChange={(event) => setSelectedJob(event.target.value)}
-          >
+          <select value={selectedJob} onChange={(e) => setSelectedJob(e.target.value)}>
             {jobOptions.map((job) => (
               <option key={job} value={job}>
                 {job === "ALL" ? "All Jobs" : job}
@@ -345,7 +265,7 @@ function LogsPage({ auth, apiBase }) {
           <label>Filter by Windrow</label>
           <select
             value={selectedWindrow}
-            onChange={(event) => setSelectedWindrow(event.target.value)}
+            onChange={(e) => setSelectedWindrow(e.target.value)}
           >
             {windrowOptions.map((windrow) => (
               <option key={windrow} value={windrow}>
@@ -357,34 +277,38 @@ function LogsPage({ auth, apiBase }) {
       </div>
 
       {newestFirstLogs.length === 0 ? (
-        <div className="logs-card">
-          <p>No saved logs found for the selected filters.</p>
+        <div className="form-card">
+          <p>No logs found.</p>
         </div>
       ) : (
         newestFirstLogs.map((log) => {
           const isEditing = editingId === log.id;
 
           return (
-            <div
-              key={log.id}
-              className={isEditing ? "edit-card" : "logs-card"}
-            >
+            <div key={log.id} className="form-card" style={{ marginBottom: "20px" }}>
               {!isEditing ? (
                 <>
-                  <div className="card-header">
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                      marginBottom: "16px"
+                    }}
+                  >
                     <div>
-                      <h2 style={{ marginBottom: "6px" }}>
-                        {log.jobName || "Log Entry"}
-                      </h2>
-                      <p style={{ margin: 0 }}>
-                        <strong>Date:</strong> {formatDateForDisplay(log.logDate)}
+                      <h2 style={{ marginBottom: "8px" }}>{log.jobName || "Job"}</h2>
+                      <div style={{ fontWeight: 600 }}>
+                        Date: {formatDateForDisplay(log.logDate)}{" "}
                         <span style={{ marginLeft: "16px" }}>
-                          <strong>Time:</strong> {formatTimeForDisplay(log.logTime)}
+                          Time: {formatTimeForDisplay(log.logTime)}
                         </span>
-                      </p>
+                      </div>
                     </div>
 
-                    <div className="action-buttons">
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                       <button
                         type="button"
                         className="secondary-button"
@@ -406,96 +330,90 @@ function LogsPage({ auth, apiBase }) {
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                      gap: "12px",
-                      marginTop: "18px"
+                      gap: "12px"
                     }}
                   >
-                    <div className="compact-stat">
-                      <strong>Operator:</strong>
-                      <br />
-                      {log.operatorName ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Operator</label>
+                      <input value={log.operatorName ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Windrow:</strong>
-                      <br />
-                      {log.windrow?.rowNumber ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Windrow</label>
+                      <input value={log.windrow?.rowNumber ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>P1:</strong>
-                      <br />
-                      {log.probe1TempBefore ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>P1</label>
+                      <input value={log.probe1TempBefore ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>P2:</strong>
-                      <br />
-                      {log.probe2TempBefore ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>P2</label>
+                      <input value={log.probe2TempBefore ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>P3:</strong>
-                      <br />
-                      {log.probe3TempBefore ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>P3</label>
+                      <input value={log.probe3TempBefore ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Avg Temp:</strong>
-                      <br />
-                      {averageTemp(log)?.toFixed(2) ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Avg Temp</label>
+                      <input value={averageTemp(log)?.toFixed(2) ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>After:</strong>
-                      <br />
-                      {log.tempAfter ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>After</label>
+                      <input value={log.tempAfter ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Moisture:</strong>
-                      <br />
-                      {log.moisturePercent ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Moisture</label>
+                      <input value={log.moisturePercent ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Water:</strong>
-                      <br />
-                      {log.waterAppliedGallons ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Water</label>
+                      <input value={log.waterAppliedGallons ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>CO2:</strong>
-                      <br />
-                      {log.co2Level ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>CO2</label>
+                      <input value={log.co2Level ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Turn:</strong>
-                      <br />
-                      {log.turnStatus ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Turn</label>
+                      <input value={log.turnStatus ?? ""} readOnly />
                     </div>
 
-                    <div className="compact-stat">
-                      <strong>Rain:</strong>
-                      <br />
-                      {log.rainInches ?? ""}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label>Rain</label>
+                      <input value={log.rainInches ?? ""} readOnly />
                     </div>
                   </div>
 
-                  {log.notes && (
-                    <div style={{ marginTop: "16px" }}>
-                      <strong>Notes:</strong>
-                      <p style={{ marginTop: "6px", marginBottom: 0 }}>{log.notes}</p>
-                    </div>
-                  )}
+                  <div className="form-group" style={{ marginTop: "16px", marginBottom: 0 }}>
+                    <label>Notes</label>
+                    <textarea value={log.notes ?? ""} readOnly rows="3" />
+                  </div>
                 </>
               ) : (
                 <>
-                  <div className="card-header">
-                    <h2>Edit Log</h2>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px",
+                      flexWrap: "wrap",
+                      marginBottom: "16px"
+                    }}
+                  >
+                    <h2 style={{ marginBottom: 0 }}>Edit Log</h2>
 
-                    <div className="action-buttons">
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                       <button
                         type="button"
                         className="primary-button"
@@ -516,11 +434,7 @@ function LogsPage({ auth, apiBase }) {
                   <div className="form-grid">
                     <div className="form-group">
                       <label>Job</label>
-                      <select
-                        name="jobName"
-                        value={editForm.jobName}
-                        onChange={handleEditChange}
-                      >
+                      <select name="jobName" value={editForm.jobName} onChange={handleEditChange}>
                         <option value="Job 1">Job 1</option>
                         <option value="Job 2">Job 2</option>
                         <option value="Job 3">Job 3</option>
@@ -684,11 +598,6 @@ function LogsPage({ auth, apiBase }) {
           );
         })
       )}
-
-      <ChartCard title="CO2" data={co2Data} color="#e74c3c" />
-      <ChartCard title="Average Temp" data={avgTempData} color="#3498db" />
-      <ChartCard title="Temp After" data={tempAfterData} color="#8e44ad" />
-      <ChartCard title="Moisture" data={moistureData} color="#2e8b57" />
     </div>
   );
 }
