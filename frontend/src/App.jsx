@@ -4,7 +4,7 @@ import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
 import AnalyticsPage from "./AnalyticsPage";
 import "./App.css";
-import logo from "./assets/temp.png";
+import logo from "./assets/logo.png";
 
 const API_BASE =
   window.location.hostname === "localhost"
