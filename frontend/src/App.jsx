@@ -4,7 +4,7 @@ import LogForm from "./LogForm";
 import LogsPage from "./LogsPage";
 import AnalyticsPage from "./AnalyticsPage";
 import "./App.css";
-import logo from "./assets/logo.png";
+import logo from "./assets/temp.png";
 
 const API_BASE =
   window.location.hostname === "localhost"
@@ -55,7 +55,7 @@ function LoginPage({ onLogin }) {
         <div className="logo-container">
             <img src={logo} alt="WindrowPro Logo" className="logo"/>
         </div>
-        
+
         <h1 className="page-title">Login</h1>
 
         <form onSubmit={handleSubmit} className="log-form">
