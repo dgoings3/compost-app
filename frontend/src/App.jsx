@@ -52,6 +52,7 @@ function LoginPage({ onLogin }) {
     <div className="page-container">
       <div className="form-card">
 
+      <div className="login-container"></div>
         <div className="logo-container">
             <img src={logo} alt="WindrowPro Logo" className="logo"/>
         </div>
