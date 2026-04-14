@@ -201,7 +201,8 @@ textarea {
 
 .logo {
   display: block;
-  width: 220px;
+  width: 100%;
+  max-width: 500px;
   height: auto;
   opacity: 0.95;
 }
