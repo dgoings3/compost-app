@@ -195,6 +195,9 @@ textarea {
 .logo-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  height: 120px;
+  overflow: hidden;
   margin-bottom: 20px;
 }
 
