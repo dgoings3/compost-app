@@ -199,8 +199,11 @@ textarea {
 }
 
 .logo {
-  max-width: 220px;
+  display: block;
+  margin: 0 auto 25px auto;
+  width: 200px;
   height: auto;
+  opacity: 0.95;
 }
 
 @media (max-width: 768px) {
