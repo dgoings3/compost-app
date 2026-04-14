@@ -195,13 +195,13 @@ textarea {
 .logo-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .logo {
   display: block;
   margin: 0 auto 25px auto;
-  width: 200px;
+  width: 300px;
   height: auto;
   opacity: 0.95;
 }
